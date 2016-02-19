@@ -1,29 +1,25 @@
 import numpy as np
 import heapq
+import time
 from collections import Counter
 
-def convertByteToInt(bytes):
-	result = 0
-	for i in range(len(bytes)):
-		result = (result << 8) + bytes[i]
-	return result
-
-def distanceEuclidean(a, b):
-	c = [(a[i] - b[i]) for i in a]
-	return np.linalg.norm(c)
+def distance(a, b):
+	return np.linalg.norm(a-b)
 
 def readMnistImage(filename):
 	file_object = open(filename, 'rb')
 	allText = file_object.read()
-	m = convertByteToInt(allText[8:12])
-	n = convertByteToInt(allText[12:16])
-	result = [allText[16 + i*m*n: 16 + (i+1)*m*n] for i in range(int(len(allText)/(m*n)))]
-	return result
+	file_object.close()
+	mat = np.asarray([allText[i] for i in range(16,len(allText))])
+	mat.shape = (int(len(allText)/784), 784)
+	return mat
 
 def readMnistLable(filename):
 	file_object = open(filename, 'rb')
 	allText = file_object.read()
-	return allText[8:]
+	file_object.close()
+	mat = np.asarray([allText[i] for i in range(8, len(allText))])
+	return mat
 
 def predictAccurary(testLabel, predictions):
 	result = 0
@@ -35,14 +31,24 @@ def predictAccurary(testLabel, predictions):
 def knnPredict(K, trainImage, trainLabel, testImage):
 	result = []
 	for i in range(len(testImage)):
-		print(i)
-		indexes = [p[1] for p in heapq.nsmallest(K, [(distanceEuclidean(trainImage[j], testImage[i]), j) for j in range(len(trainImage))])]
+		if i % 100 == 0:
+			print(i, time.localtime())
+		# distances = [distance(trainImage[j], testImage[i]) for j in range(len(trainImage))]
+		# distances = sorted(distances)
+		# print(distances[:K])
+		# print(i, time.localtime())
+		# print(len(trainImage))
+		indexes = [p[1] for p in heapq.nsmallest(K, [(distance(trainImage[j], testImage[i]), j) for j in range(len(trainImage))])]
+		# print(i, time.localtime())
 		labels = [trainLabel[i] for i in indexes]
+		# print(labels)
 		predict = [p[1] for p in heapq.nlargest(1, [(labels.count(j), j) for j in range(10)])]
+		# print(predict)
 		result = np.append(result, predict)
 	return result
 
-K = 100
+K = 1
+print(time.localtime())
 trainImage = readMnistImage('train-images.idx3-ubyte')
 trainLabel = readMnistLable('train-labels.idx1-ubyte')
 testImage = readMnistImage('t10k-images.idx3-ubyte')
